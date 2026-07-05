@@ -1,0 +1,42 @@
+name: SP500 Watcher
+
+# スケジュールトリガーは使わず、Power Automate から
+# GitHub API 経由で workflow_dispatch を呼び出してもらう想定。
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write   # notified.json をコミット・pushするために必要
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run watcher
+        env:
+          MS_TENANT_ID: ${{ secrets.MS_TENANT_ID }}
+          MS_CLIENT_ID: ${{ secrets.MS_CLIENT_ID }}
+          MS_CLIENT_SECRET: ${{ secrets.MS_CLIENT_SECRET }}
+          MS_SENDER_UPN: ${{ secrets.MS_SENDER_UPN }}
+          MAIL_TO: ${{ secrets.MAIL_TO }}
+          LOOKBACK_DAYS: "10"
+        run: python check_sp500_changes.py
+
+      - name: Commit updated state file
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add notified.json
+          git diff --cached --quiet || git commit -m "chore: update notified state [skip ci]"
+          git push
