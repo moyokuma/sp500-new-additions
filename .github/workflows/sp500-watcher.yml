@@ -3,7 +3,11 @@ name: SP500 Watcher
 # スケジュールトリガーは使わず、Power Automate から
 # GitHub API 経由で workflow_dispatch を呼び出してもらう想定。
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    # 手動実行用
+  repository_dispatch:
+    # 外部（Power Automateなど）からのREST API呼び出し用
+    types: [run-sp500-watcher]
 
 permissions:
   contents: write   # notified.json をコミット・pushするために必要
